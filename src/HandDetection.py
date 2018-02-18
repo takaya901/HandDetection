@@ -1,39 +1,36 @@
 import cv2
+import numpy as np
 
 cap = cv2.VideoCapture(0)
-
-# Haar-like特徴分類器の読み込み
-# face_cascade = cv2.CascadeClassifier('haarcascades/haarcascade_frontalface_default.xml')
-# eye_cascade = cv2.CascadeClassifier('haarcascades/haarcascade_smile.xml')
+# skin_img = np.zeros((640, 480, 3), np.uint8)
+skin_lower = (0, 58, 88)
+skin_upper = (25, 173, 229)
 
 while(True):
+    ret, input_img = cap.read()
+    # skin_img = Scalar(0,0,0)
 
-    ret,frame = cap.read()
+    frame = cv2.medianBlur(input_img, 7)  #ノイズ除去
+    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)  # HSVに変換
 
-    # イメージファイルの読み込み
-    #img = cv2.imread('face.jpg')
+    # 肌色でない画素を黒に
+    # for y in range(frame.shape[0]):
+    #     for x in range(frame.shape[1]):
+    #         if frame.item(y,x,0) > 15 and frame.item(y,x,1) < 50:
+    #             frame.itemset((y,x,0), 0)
+    #             frame.itemset((y,x,1), 0)
+    #             frame.itemset((y,x,2), 0)
+    #         else:
+    #             frame.itemset((y,x,0), input_img.item(y,x,0))
+    #             frame.itemset((y,x,1), input_img.item(y,x,1))
+    #             frame.itemset((y,x,2), input_img.item(y,x,2))
+    skin_img = cv2.inRange(frame, skin_lower, skin_upper)
 
-    # グレースケール変換
-    # gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    #
-    # # 顔を検知
-    # faces = face_cascade.detectMultiScale(gray)
-    # for (x,y,w,h) in faces:
-    #     # 検知した顔を矩形で囲む
-    #     cv2.rectangle(frame,(x,y),(x+w,y+h),(255,0,0),2)
-    #     # 顔画像（グレースケール）
-    #     roi_gray = gray[y:y+h, x:x+w]
-    #     # 顔画像（カラースケール）
-    #     roi_color = frame[y:y+h, x:x+w]
-    #     # 顔の中から目を検知
-    #     eyes = eye_cascade.detectMultiScale(roi_gray)
-    #     for (ex,ey,ew,eh) in eyes:
-    #         # 検知した目を矩形で囲む
-    #         cv2.rectangle(roi_color,(ex,ey),(ex+ew,ey+eh),(0,255,0),2)
-
-    # 画像表示
-    cv2.imshow('img',frame)
+    # output
+    cv2.imshow('cap', skin_img)
+    # cv2.imshow('result', skin_img)
 
     # 何かキーを押したら終了
-    cv2.waitKey(5)
+    if cv2.waitKey(5) >= 0:
+        break
 cv2.destroyAllWindows()
