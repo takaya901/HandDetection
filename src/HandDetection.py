@@ -1,36 +1,41 @@
+# -*- coding: utf-8 -*-
 import cv2
 import numpy as np
+import matplotlib.pyplot as plt
+import ctypes
+
+ESC = 0x1B  # ESCキーの仮想キーコード
+def getkey(key):
+    return(bool(ctypes.windll.user32.GetAsyncKeyState(key) & 0x8000))
 
 cap = cv2.VideoCapture(0)
-# skin_img = np.zeros((640, 480, 3), np.uint8)
+# 肌色のHSV閾値
 skin_lower = (0, 58, 88)
 skin_upper = (25, 173, 229)
 
 while(True):
     ret, input_img = cap.read()
-    # skin_img = Scalar(0,0,0)
 
-    frame = cv2.medianBlur(input_img, 7)  #ノイズ除去
-    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)  # HSVに変換
+    noise_deleted = cv2.medianBlur(input_img, 7)    #ノイズ除去
+    input_hsv = cv2.cvtColor(noise_deleted, cv2.COLOR_BGR2HSV)  # HSVに変換
 
-    # 肌色でない画素を黒に
-    # for y in range(frame.shape[0]):
-    #     for x in range(frame.shape[1]):
-    #         if frame.item(y,x,0) > 15 and frame.item(y,x,1) < 50:
-    #             frame.itemset((y,x,0), 0)
-    #             frame.itemset((y,x,1), 0)
-    #             frame.itemset((y,x,2), 0)
-    #         else:
-    #             frame.itemset((y,x,0), input_img.item(y,x,0))
-    #             frame.itemset((y,x,1), input_img.item(y,x,1))
-    #             frame.itemset((y,x,2), input_img.item(y,x,2))
-    skin_img = cv2.inRange(frame, skin_lower, skin_upper)
+    # 肌色だけ残して輪郭描画
+    skin_mask = cv2.inRange(input_hsv, skin_lower, skin_upper)
+    counter_img, contours, hierarchy = cv2.findContours(skin_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    input_masked = cv2.bitwise_and(input_img, input_img, mask=skin_mask)
+    result = cv2.drawContours(input_masked, contours, -1, (0,255,0), 3)
 
-    # output
-    cv2.imshow('cap', skin_img)
-    # cv2.imshow('result', skin_img)
+    plt.ion()   # 対話モードオン
+    result_arr = np.asarray(result) # 画像をarrayに変換
+    plt.imshow(result_arr)
+    plt.pause(.00001)
+    plt.title('result')
 
-    # 何かキーを押したら終了
+    # ESCキーが押されたら終了
+    if getkey(ESC):
+        break
+    # キーが押されたら終了
     if cv2.waitKey(5) >= 0:
         break
 cv2.destroyAllWindows()
+plt.close()
